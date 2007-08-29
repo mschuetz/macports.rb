@@ -12,7 +12,7 @@ if cgi['portname']!=''
       puts 'no such port'
     else
       graph = pi.dep_graph(portname)
-      fn = '/tmp/mp-depgrapher'+Process.pid.to_s+Time.now.to_i.to_s+portname+'.png'
+      fn = '/tmp/mp-depgrapher'+Process.pid.to_s+Time.now.to_i.to_s+portname.hash.to_s+'.png'
       graph.output(:output=>'png', :file=>fn)
       #puts "<br/>graph has been created"
       cgi.out('Content-Type'=> 'image/png'){ File.open(fn){|f| f.read} }
