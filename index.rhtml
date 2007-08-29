@@ -2,7 +2,7 @@
 cgi = CGI.new
 if cgi['portname']!=''
   portname = cgi['portname']
-  if portname=~/[\\\/\.]/ 
+  if portname=~/[\\\/]/ or portname=~/\.\./
     puts '<font size=60><blink>evil haXX0r alert</blink></font>'
   else
     portname = portname.clone.untaint
