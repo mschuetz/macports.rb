@@ -1,0 +1,45 @@
+<% begin %><% require './macports' %><% message="" %><%
+cgi = CGI.new
+if cgi['portname']!=''
+  portname = cgi['portname']
+  if portname=~/[\\\/\.]/ 
+    puts '<font size=60><blink>evil haXX0r alert</blink></font>'
+  else
+    portname = portname.clone.untaint
+    pi = MacPorts::PortIndex.new
+    pi.dotpath = "/opt/local/bin"
+    if pi.port(portname).nil?
+      puts 'no such port'
+    else
+      graph = pi.dep_graph(portname)
+      fn = '/tmp/mp-depgrapher'+Process.pid.to_s+Time.now.to_i.to_s+portname+'.png'
+      graph.output(:output=>'png', :file=>fn)
+      #puts "<br/>graph has been created"
+      cgi.out('Content-Type'=> 'image/png'){ File.open(fn){|f| f.read} }
+    end
+  end
+else
+%>
+
+<html>
+<head>
+<title>macports dependency grapher</title>
+</head>
+<body>
+<p>
+<form method="get" action="index.rhtml">
+    Portname: <input name="portname" size="20" type="text" value="" />
+    <input type="submit" value="Graph"/>
+</form>
+</p>
+<%= message %>
+</body>
+</html>
+<% end %>
+
+<%rescue Exception=>ex
+puts "<h2>#{ex.class}: #{ex}</h2>"
+puts ex.backtrace.join('<br/>')
+
+puts "<p/>"+$LOAD_PATH.join('<br/>')
+end%>
