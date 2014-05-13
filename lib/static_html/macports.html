@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>macports dependency graphs</title>
+		<meta name="description" content="" />
+		<meta name="author" content="Matthias Schütz" />
+		<link rel="stylesheet" href="/markdown.css" />
+	</head>
+	<body>
+		<div>
+			<header>
+				<h1>macports</h1>
+			</header>
+			<div>
+			<!--<input id="portname" name="portname" />-->
+			<div id="graph"></div>
+			</div>
+			<footer>
+			</footer>
+		</div>
+		<script src="/jquery-1.7.1.min.js"></script>
+		<script src="/jquery.ba-hashchange.min.js"></script>
+		<script src="/raphael.min.js"></script>
+		<script src="/dracula_algorithms.min.js"></script>
+		<script src="/dracula_graffle.min.js"></script>
+		<script src="/dracula_graph.js"></script>
+		<script type="text/javascript">
+		
+		function renderDependencies(graph){
+			var g = new Graph();
+			$.each(graph.nodes, function(i, nodename){
+				g.addNode(nodename);
+			});
+			
+			g.edgeFactory.template.style.directed = true;
+			
+			$.each(graph.edges, function(i, edge){
+				g.addEdge(edge[0], edge[1]);
+			});
+			
+		    var layouter = new Graph.Layout.Ordered(g, topological_sort(g));
+		    //var layouter = new Graph.layout.Tree(g);
+		    //var layouter = new Graph.Layout.Spring(g);
+			layouter.layout();
+			
+			var renderer = new Graph.Renderer.Raphael('graph', g, 800, 600);
+			renderer.draw();
+			$('header h1').text("macports dependencies of " + portname);
+		}
+		
+		var allDependencies = null;
+
+		function collectDependencies(portname, graph) {
+			if (graph.nodes.indexOf(portname)==-1) {
+				graph.nodes.push(portname);
+				var curDeps = allDependencies[portname];
+				if (curDeps == undefined){
+					console.log("port " + portname + " not found in portindex");
+				} else {
+					curDeps.every(function(depname){
+						graph.edges.push([portname, depname]);
+						collectDependencies(depname, graph);
+						return true;
+					});
+				}
+			}
+			return graph;
+		}
+		
+		$(document).ready(function() {
+			$(window).hashchange( function() {
+				portname = location.hash.substring(1, location.hash.length);
+				if (portname == '')
+					return;
+				console.log("looking up port " + portname);
+				if (allDependencies == null) {
+					$.getJSON('/macports-deps.json', function(data){
+						allDependencies = data;
+						renderDependencies(collectDependencies(portname, {nodes:[], edges:[]}));
+					});
+				} else {
+					renderDependencies(collectDependencies(portname, {nodes:[], edges:[]}));
+				}
+			});
+			$(window).hashchange();
+		});
+		</script>
+	</body>
+</html>
